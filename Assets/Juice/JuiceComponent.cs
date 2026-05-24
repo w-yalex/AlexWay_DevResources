@@ -4,20 +4,31 @@ using System;
 
 namespace AW.UnityResources
 {
-    // These are placed on GameObjects, some will have methods to call static Play()
+    /// <summary>
+    /// These are placed on GameObjects and called via Juice static class
+    /// Some class may have a PlayInstanced() if they don't need to exist on any single GameObject
+    /// </summary>
     public abstract class JuiceComponent : MonoBehaviour
     {
-        public virtual void PlayOnObject(Action onComplete = null) { }
+        [Header("Juice Component")]
 
-        // Override the default values with custom values
-        public virtual void PlayOnObject<TData>(TData juiceData, Action onComplete = null) where TData : struct { }
+        [Tooltip("Can be used to reference a specific JuiceComponent")]
+        [SerializeField] private string _optionalReferenceKey = "None";
+        
+        public string OptionalReferenceKey => _optionalReferenceKey;
 
+        protected virtual void OnValidate()
+        {
+            if (string.IsNullOrEmpty(_optionalReferenceKey))
+                _optionalReferenceKey = "None";
+        }
 
-        public virtual void StopOnObject() { }
+        
+        public abstract void PlayOnObject(Action onComplete = null);
 
-        public virtual void StopOnObject<TData>(TData juiceData) where TData : struct { }
+        public abstract void PlayOnObject<TData>(TData juiceData, Action onComplete = null) where TData : struct;
 
-        protected virtual void OnDestroy() => DOTween.Kill(this);
+        public abstract void ClearOnObject();
         
     }
 

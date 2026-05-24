@@ -9,86 +9,95 @@ namespace AW.UnityResources
     [RequireComponent(typeof(MeshRenderer))]
     public class MaterialFlash : JuiceComponent
     {  
-        [SerializeField] private OnPlay _onPlayData;
-
-        private Dictionary<int, Material> _originalMaterialsByIndex = new();
-        private Material[] _currentMaterials;
+        [Header("Material Flash")]
+        [SerializeField] private Settings _settings;
         private MeshRenderer _meshRenderer;
+        
+        private MaterialPropertyBlock _propertyBlock;
 
         [Serializable]
-        public struct OnPlay
+        public struct Settings
         {
-            public Material FlashMaterial;
+            [Header("Visuals")]
+            public Color FlashColor;
+            
+            [Header("Timing")]
             public int FlashCount;
             public float TotalFlashDuration;
+            public bool IgnoreTimeScale;
         }
+
 
         private void Awake()
         {
             _meshRenderer = GetComponent<MeshRenderer>();
 
-            _currentMaterials = _meshRenderer.materials;
-
-            for (int i = 0; i < _currentMaterials.Length; i++)
-                _originalMaterialsByIndex[i] = _currentMaterials[i];
-
+            _propertyBlock = new MaterialPropertyBlock();
         }
 
 
         public override void PlayOnObject(Action onComplete = null)
-            => SetMaterialFlash(_onPlayData, onComplete);
+            => BeginMaterialFlash(_settings, onComplete);
     
 
         public override void PlayOnObject<TData>(TData juiceData, Action onComplete = null)
         {
-            if (juiceData is not OnPlay onPlayData)
+            if (juiceData is not Settings customSettings)
             {
-                UnityDebug.LogWarning(this, "Juice data received did not match OnPlay");
+                UnityDebug.LogWarning(this, $"Juice data received did not match {typeof(Settings).FullName}");
                 return;
             }
 
-            SetMaterialFlash(onPlayData, onComplete);
+            BeginMaterialFlash(customSettings, onComplete);
         }
 
+        public override void ClearOnObject() => ClearMaterialFlash();
 
-        private void SetMaterialFlash(OnPlay onPlayData, Action onComplete = null)
+        private void BeginMaterialFlash(Settings settings, Action onComplete = null)
         {
             DOTween.Kill(this);
 
-            float cycleTime = onPlayData.TotalFlashDuration / onPlayData.FlashCount;
+            float cycleTime = settings.TotalFlashDuration / settings.FlashCount;
             float flashDelay = cycleTime * 0.5f;
 
             Sequence seq = DOTween.Sequence()
-                .AppendCallback(() => FlashMaterials(onPlayData.FlashMaterial))
+                .AppendCallback(() => FlashMaterials(settings.FlashColor))
                 .AppendInterval(flashDelay)
                 .AppendCallback(ResetMaterials)
                 .AppendInterval(flashDelay)
-                .SetLoops(onPlayData.FlashCount)
+                .SetLoops(settings.FlashCount)
+                .SetUpdate(settings.IgnoreTimeScale)
                 .SetTarget(this)
-                .OnComplete(() => onComplete?.Invoke());
+                .OnComplete(() => OnMaterialFlashComplete(settings, onComplete));
         }
 
-        private void FlashMaterials(Material flashMaterial)
-        {
-            for (int i = 0; i < _meshRenderer.materials.Length; i++)
-                _currentMaterials[i] = flashMaterial;
-                
-            _meshRenderer.materials  = _currentMaterials;
-        }
-
-        private void ResetMaterials()
-        {
-            for (int i = 0; i < _meshRenderer.materials.Length; i++)
-                _currentMaterials[i] = _originalMaterialsByIndex[i];
-    
-            _meshRenderer.materials = _currentMaterials;
-        }
-
-        public override void StopOnObject()
+        private void ClearMaterialFlash()
         {
             DOTween.Kill(this);
             ResetMaterials();
         }
+
+        private void OnMaterialFlashComplete(Settings settings, Action onComplete = null)
+        {
+            ClearMaterialFlash();
+            onComplete?.Invoke();
+        }
+
+        private void FlashMaterials(Color flashColor)
+        {
+           _meshRenderer.GetPropertyBlock(_propertyBlock);
+
+           _propertyBlock.SetColor("_BaseColor", flashColor);
+           _meshRenderer.SetPropertyBlock(_propertyBlock);
+        }
+
+
+        private void ResetMaterials()
+        {
+            _propertyBlock.Clear();
+            _meshRenderer.SetPropertyBlock(_propertyBlock);
+        }
+
 
     }
 
