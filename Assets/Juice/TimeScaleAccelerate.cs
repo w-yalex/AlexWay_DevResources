@@ -4,20 +4,20 @@ using System;
 
 namespace AW.UnityResources
 {
-    public class TimeScaleSlowMotion : JuiceComponent
+    public class TimeScaleAccelerate : JuiceComponent
     {
-        public const float MaxSlowMotionFactor = 0.99f;
-        [Header("Time Scale Slow Motion")]
-        [SerializeField] private Config _config;
+        public const float MaxAccelerateFactor = 10f;
 
-        private static readonly object _instanceFeedbackTarget = new();
+        [Header("Time Scale Accelerate")]
+        [SerializeField] private Config _config;
 
         [Serializable]
         public class Config
         {
             [Header("Timing")]
+
             [Tooltip("The higher value, the greater the slow motion")]
-            [Range(0f, MaxSlowMotionFactor)] public float TargetSlowMotionFactor = 0.8f;
+            [Range(1f, MaxAccelerateFactor)] public float targetTimeScale = 0.8f;
             public float MaxAttackTime = 0.2f;
             public float SustainTime = 0.2f;
             public float DecayTime = 0.5f;
@@ -47,34 +47,34 @@ namespace AW.UnityResources
         public override void ClearOnObject() => ClearInstance();
 
         public static void PlayInstance(Config config, Action onComplete = null)
-            => BeginTimeScaleSlowMotion(config, onComplete);
+            => BeginTimeScaleAccelerate(config, onComplete);
 
         public static void ClearInstance() => ClearTimeScaleSlowMotion();
         
-        private static void BeginTimeScaleSlowMotion(Config config, Action onComplete = null)
+        private static void BeginTimeScaleAccelerate(Config config, Action onComplete = null)
         {
-            if (!TimeScale.TrySetActiveModifier(TimeScale.Modifier.SlowMotion, config.OverridePriority)) return;
+            if (!TimeScale.TrySetActiveModifier(TimeScale.Modifier.Accelerate, config.OverridePriority)) return;
             DOTween.Kill(TimeScale.ModifierTarget);
 
-            float targetSlowMotionFactor = Mathf.Clamp(config.TargetSlowMotionFactor, 0f, MaxSlowMotionFactor);
+            float startingTimeScale = TimeScale.GetCurrent();
 
-            float startTimeScale = TimeScale.GetCurrent();
-            float targetTimeScale = 1 - config.TargetSlowMotionFactor;
-            float progressToTarget = Mathf.InverseLerp(1f, targetTimeScale, startTimeScale);
+            float targetTimeScale = Mathf.Clamp(config.targetTimeScale, 1f, MaxAccelerateFactor);
+            float progressToTarget = Mathf.InverseLerp(1f, targetTimeScale, startingTimeScale);
+
             float attackTime = (1 - progressToTarget) * config.MaxAttackTime;
 
             float t = 0f;
             DOTween.Sequence()
-                .Append(DOTween.To(() => t, x => t = x, 1f, attackTime)
+                .Append(DOTween.To(() => 0f, x => t = x, 1f, attackTime)
                     .OnUpdate(() =>
                     {
-                        float appliedTimeScale = Mathf.Lerp(startTimeScale, targetTimeScale, t);
+                        float appliedTimeScale = Mathf.Lerp(startingTimeScale, targetTimeScale, t);
                         TimeScale.Override(appliedTimeScale);
                     })
                     .SetEase(config.AttackEase)
                     .OnComplete(() => t = 0f))
                 .AppendInterval(config.SustainTime)
-                .Append(DOTween.To(() => t, x => t = x, 0f, config.DecayTime)
+                .Append(DOTween.To(() => 0f, x => t = x, 1f, config.DecayTime)
                     .OnUpdate(() =>
                     {
                         float appliedTimeScale = Mathf.Lerp(targetTimeScale, 1f, t);
@@ -85,18 +85,20 @@ namespace AW.UnityResources
                 .SetTarget(TimeScale.ModifierTarget)
                 .OnComplete(() =>
                 {
-                    TimeScale.TryClearActiveModifier(TimeScale.Modifier.SlowMotion);
+                    TimeScale.TryClearActiveModifier(TimeScale.Modifier.Accelerate);
                     onComplete?.Invoke();
                 });
         }
 
+
         private static void ClearTimeScaleSlowMotion()
         {
-            if (!TimeScale.TryClearActiveModifier(TimeScale.Modifier.SlowMotion)) return;
-            
+            if (!TimeScale.TryClearActiveModifier(TimeScale.Modifier.Accelerate)) return;
+
             DOTween.Kill(TimeScale.ModifierTarget);
-            TimeScale.Override(1f);
+            Time.timeScale = 1f;
         }
+
 
 
     }

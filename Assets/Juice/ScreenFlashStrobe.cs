@@ -10,69 +10,71 @@ namespace AW.UnityResources
     public class ScreenFlashStrobe : JuiceComponent
     {
         [Header("Screen Flash Strobe")]
-        [SerializeField] private Settings _settings;
+        [SerializeField] private Config _defaultConfig;
 
         private static ColorAdjustments _colorAdjustments;
         private static readonly object _instanceFeedbackTarget = new();
 
         [Serializable]
-        public struct Settings
+        public class Config
         {
             [Header("Visuals")]
-            public Color FlashColor;
-            public float FlashExposure;
+            public Color FlashColor = Color.white;
+
+            [Tooltip("Values 1 to 3 usually feel better")]
+            public float FlashExposure = 1.2f;
 
             [Header("Timing")]
-            public int FlashCount;
-            public float TotalFlashDuration;
+            public int FlashCycles = 4;
+            public float TotalFlashDuration = 0.2f;
             public bool IgnoreTimeScale;
         }
 
 
         public override void PlayOnObject(Action onComplete = null)
-            => PlayInstance(_settings, onComplete);
+            => PlayInstance(_defaultConfig, onComplete);
 
         public override void PlayOnObject<TData>(TData juiceData, Action onComplete = null)
         {     
-            if (juiceData is not Settings customSettings)
+            if (juiceData is not Config customConfig)
             {
-                UnityDebug.LogWarning(this, $"Juice data received did not match {typeof(Settings).FullName}");
+                UnityDebug.LogWarning(this, $"Juice data received did not match {typeof(Config).FullName}");
                 return;
             }
 
-            PlayInstance(customSettings, onComplete);
+            PlayInstance(customConfig, onComplete);
         }
 
         public override void ClearOnObject() => ClearInstance();
 
 
-        public static void PlayInstance(Settings settings, Action onComplete = null)
-            => BeginSceenFlashStrobe(settings, onComplete);
+        public static void PlayInstance(Config config, Action onComplete = null)
+            => BeginSceenFlashStrobe(config, onComplete);
 
 
         public static void ClearInstance() => ClearScreenBlinkFlash();
 
-        private static void BeginSceenFlashStrobe(Settings settings, Action onComplete = null)
+        private static void BeginSceenFlashStrobe(Config config, Action onComplete = null)
         {
             DOTween.Kill(_instanceFeedbackTarget);
 
             ValidatePostProcessing();
             TrySpawnScreenFlashStrobeSource();
 
-            ApplyScreenBlinkFlashSettings(settings);
+            ApplyScreenBlinkFlashConfig(config);
 
-            float cycleTime = settings.TotalFlashDuration / settings.FlashCount;
+            float cycleTime = config.TotalFlashDuration / config.FlashCycles;
             float flashDelay = cycleTime * 0.5f;
 
             Sequence seq = DOTween.Sequence()
-                .AppendCallback(() => _colorAdjustments.postExposure.value = settings.FlashExposure)
+                .AppendCallback(() => _colorAdjustments.postExposure.value = config.FlashExposure)
                 .AppendInterval(flashDelay)
                 .AppendCallback(() => _colorAdjustments.postExposure.value = 0f)
                 .AppendInterval(flashDelay)
-                .SetLoops(settings.FlashCount)
-                .SetUpdate(settings.IgnoreTimeScale)
+                .SetLoops(config.FlashCycles)
+                .SetUpdate(config.IgnoreTimeScale)
                 .SetTarget(_instanceFeedbackTarget)
-                .OnComplete(() => OnScreenFlashStrobe(settings, onComplete));
+                .OnComplete(() => OnScreenFlashStrobe(config, onComplete));
             
         }
 
@@ -84,7 +86,7 @@ namespace AW.UnityResources
         }
 
 
-        private static void OnScreenFlashStrobe(Settings settings, Action onComplete = null)
+        private static void OnScreenFlashStrobe(Config config, Action onComplete = null)
         {
             _colorAdjustments.colorFilter.value = Color.white;
             onComplete?.Invoke();
@@ -119,9 +121,9 @@ namespace AW.UnityResources
             return true;
         }
 
-        private static void ApplyScreenBlinkFlashSettings(Settings settings)
+        private static void ApplyScreenBlinkFlashConfig(Config config)
         {
-            _colorAdjustments.colorFilter.value = settings.FlashColor;
+            _colorAdjustments.colorFilter.value = config.FlashColor;
             // TODO: Maybe modify intensity 
         }
 

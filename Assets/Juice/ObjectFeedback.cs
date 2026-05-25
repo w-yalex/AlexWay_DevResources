@@ -22,7 +22,9 @@ namespace AW.UnityResources
             ChromaticAberrationPulse = 1 << 4,
             LensDistortionBounce = 1 << 5,
             MaterialFlash = 1 << 6,
-            SquashAndStretch = 1 << 7
+            SquashAndStretch = 1 << 7,
+            PhysicsKnockback = 1 << 8,
+            SoundEffect = 1 << 9,
         }
 
         [SerializeField] private Feedback _feedbackOnObject;

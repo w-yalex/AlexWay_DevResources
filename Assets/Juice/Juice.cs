@@ -6,15 +6,9 @@ namespace AW.UnityResources
 {
     /// <summary>
     /// Main utility script used to Play and Stop any JuiceComponent added on a GameObject.
-    /// Optional overloads allow custom runtime data to be passed into specific JuiceComponents.
-    /// If no custom data provided, the component will use its configured inspector settings.
+    /// Optional overloads allow custom runtime configs to be passed into specific JuiceComponents.
+    /// If no custom configs provided, the component will use its configured inspector settings.
     /// </summary>
-    /// <example>
-    /// Example usage for a MaterialFlash component:
-    /// <code>
-    /// Juice.PlayFeedbackOnObject<MaterialFlash>(gameObject, "RedFlash", () => Debug.Log($"Red Flash MaterialFlash on {gameObject} complete!"));
-    /// </code>
-    /// </example>
     public static class Juice
     {
 
@@ -34,7 +28,7 @@ namespace AW.UnityResources
         
         public static void PlayFeedbackOnObject<TComponent, TData>(GameObject target, TData juiceData, string referenceKey = null, Action onComplete = null)
             where TComponent : JuiceComponent
-            where TData : struct
+            where TData : class
         {
 
             if (!IsComponentSearchValid<TComponent>(target, out var validComponents, referenceKey))

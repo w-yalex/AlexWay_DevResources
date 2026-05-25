@@ -7,63 +7,65 @@ namespace AW.UnityResources
     public class TimeScaleFreeze : JuiceComponent
     {
         [Header("Time Scale Freeze")]
-        [SerializeField] private Settings _settings;
-
-        private static readonly object _instanceFeedbackTarget = new();
+        [SerializeField] private Config _defaultConfig;
+        private static float _instanceFeedbackTarget;
 
         [Serializable]
-        public struct Settings
+        public class Config
         {
-            public float FreezeDuration;
+            [Header("Timing")]
+            public float FreezeDuration = 0.1f;
+
+            [Header("Override")]
+            public int OverridePriority = -1;
         }
 
         public override void PlayOnObject(Action onComplete = null)
-            => PlayInstance(_settings, onComplete);
+            => PlayInstance(_defaultConfig, onComplete);
 
         public override void PlayOnObject<TData>(TData juiceData, Action onComplete = null)
         {
-            if (juiceData is not Settings customSettings)
+            if (juiceData is not Config customConfig)
             {
-                UnityDebug.LogWarning(this, $"Juice data received did not match {typeof(Settings).FullName}");
+                UnityDebug.LogWarning(this, $"Juice data received did not match {typeof(Config).FullName}");
                 return;
             }
 
-            PlayInstance(customSettings, onComplete);
+            PlayInstance(customConfig, onComplete);
         }
 
         public override void ClearOnObject() => ClearInstance();
 
-        public static void PlayInstance(Settings settings, Action onComplete = null)
-            => BeginTimeScaleFreeze(settings, onComplete);
+        public static void PlayInstance(Config config, Action onComplete = null)
+            => BeginTimeScaleFreeze(config, onComplete);
 
         public static void ClearInstance() => ClearTimeScaleFreeze();
         
-        private static void BeginTimeScaleFreeze(Settings settings, Action onComplete = null)
+        private static void BeginTimeScaleFreeze(Config config, Action onComplete = null)
         {
-            DOTween.Kill(_instanceFeedbackTarget);
+            if (!TimeScale.TrySetActiveModifier(TimeScale.Modifier.Freeze, config.OverridePriority)) return;
 
-            Time.timeScale = 0f;
-
-            float elapsedTime = 0f;
-            DOTween.To(() => elapsedTime, x => elapsedTime = x, settings.FreezeDuration, settings.FreezeDuration)
-                .OnUpdate(() => Time.timeScale = 0f)
-                .SetUpdate(UpdateType.Late, true) // Applies after any TimeScaleSlowMotion to override it 
-                .SetTarget(_instanceFeedbackTarget);
-        
+            DOTween.Kill(TimeScale.ModifierTarget);
+            DOVirtual.DelayedCall(config.FreezeDuration, () =>
+                {
+                    TimeScale.TryClearActiveModifier(TimeScale.Modifier.Freeze);
+                    onComplete?.Invoke();
+                })
+                .SetUpdate(true)
+                .SetTarget(TimeScale.ModifierTarget);
         }
 
         private static void ClearTimeScaleFreeze()
         {
-            DOTween.Kill(_instanceFeedbackTarget);
-            Time.timeScale = 1f;
+            if (!TimeScale.TryClearActiveModifier(TimeScale.Modifier.Freeze)) return;
+            
+            DOTween.Kill(TimeScale.ModifierTarget);
+            TimeScale.Override(1f);
+            
         }
 
 
-        private static void OnTimeScaleFreezeComplete(Settings settings, Action onComplete = null)
-        {
-            Time.timeScale = 1f;
-            onComplete?.Invoke();
-        }
+
 
 
 

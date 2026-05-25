@@ -11,8 +11,7 @@ namespace AW.UnityResources
     public class CinemachineCameraShake : JuiceComponent
     {
         [Header("Cinemachine Camera Shake")]
-
-        [SerializeField] private Settings _settings;
+        [SerializeField] private Config _defaultConfig;
 
         private static readonly object _instanceFeedbackTarget = new();
 
@@ -20,45 +19,54 @@ namespace AW.UnityResources
         private static CinemachineImpulseSource _impulseSource;
 
         [Serializable]
-        public struct Settings
+        public class Config
         {
             [Header("Intensity")]
             public NoiseSettings NoiseSettings;
-            public float ShakeAmplitude;
-            public float ShakeFrequency;
+            public float ShakeAmplitude = 3.5f;
+            public float ShakeFrequency = 3.5f;
 
             [Header("Timing")]
-            public float AttackTime;
-            public float SustainTime;
-            public float DecayTime;
+            public float AttackTime = 0.1f;
+            public float SustainTime = 0.2f;
+            public float DecayTime = 0.1f;
             public bool IgnoreTimeScale;
         }
 
 
+        private void Awake()
+        {
+            if (!_defaultConfig.NoiseSettings)
+            {
+                UnityDebug.LogWarning(this, $"No Noise Settings configured in default config for {gameObject.name} gameObject");
+            }
+        }
+
+
         public override void PlayOnObject(Action onComplete = null)
-            => PlayInstance(_settings, onComplete);
+            => PlayInstance(_defaultConfig, onComplete);
 
         public override void PlayOnObject<TData>(TData juiceData, Action onComplete = null)
         {
-            if (juiceData is not Settings customSettings)
+            if (juiceData is not Config customConfig)
             {
-                UnityDebug.LogWarning(this, $"Juice data received did not match {typeof(Settings).FullName}");
+                UnityDebug.LogWarning(this, $"Juice data received did not match {typeof(Config).FullName}");
                 return;
             }
 
-            PlayInstance(customSettings, onComplete);
+            PlayInstance(customConfig, onComplete);
         }
 
 
         public override void ClearOnObject() => ClearInstance();
 
-        public static void PlayInstance(Settings settings, Action onComplete = null)
-            => BeginCinemachineCameraShake(settings, onComplete);
+        public static void PlayInstance(Config config, Action onComplete = null)
+            => BeginCinemachineCameraShake(config, onComplete);
 
 
         public static void ClearInstance() => ClearCinemachineCameraShake();
 
-        private static void BeginCinemachineCameraShake(Settings settings, Action onComplete = null)
+        private static void BeginCinemachineCameraShake(Config config, Action onComplete = null)
         {            
             DOTween.Kill(_instanceFeedbackTarget);
             CinemachineImpulseManager.Instance.Clear();
@@ -67,12 +75,12 @@ namespace AW.UnityResources
             TrySetCinemachineImpulseListener();
             TrySpawnCinemachineImpulseSource();
 
-            ApplyCinemachineCameraShakeSettings(settings);   
+            ApplyCinemachineCameraShakeConfig(config);   
 
             _impulseSource.GenerateImpulse(); // Sends to listening active camera
-            float totalDuration = settings.AttackTime + settings.SustainTime + settings.DecayTime;
+            float totalDuration = config.AttackTime + config.SustainTime + config.DecayTime;
 
-            DOVirtual.DelayedCall(totalDuration, () => OnCinemachineCameraShakeComplete(settings, onComplete))
+            DOVirtual.DelayedCall(totalDuration, () => OnCinemachineCameraShakeComplete(config, onComplete))
                 .SetTarget(_instanceFeedbackTarget);
         }
 
@@ -86,7 +94,7 @@ namespace AW.UnityResources
         }
 
 
-        private static void OnCinemachineCameraShakeComplete(Settings settings, Action onComplete = null)
+        private static void OnCinemachineCameraShakeComplete(Config config, Action onComplete = null)
         {
             CinemachineImpulseManager.Instance.Clear();
             _cinemachineBrain.IgnoreTimeScale = false;
@@ -142,19 +150,20 @@ namespace AW.UnityResources
         }
 
 
-        private static void ApplyCinemachineCameraShakeSettings(Settings settings)
+        private static void ApplyCinemachineCameraShakeConfig(Config config)
         {            
             var impulseDefinition = _impulseSource.ImpulseDefinition;
-            _impulseSource.ImpulseDefinition.RawSignal = settings.NoiseSettings;
 
-            impulseDefinition.AmplitudeGain = settings.ShakeAmplitude;
-            impulseDefinition.FrequencyGain = settings.ShakeFrequency;
+            _impulseSource.ImpulseDefinition.RawSignal = config.NoiseSettings;
 
-            impulseDefinition.TimeEnvelope.AttackTime = settings.AttackTime;
-            impulseDefinition.TimeEnvelope.SustainTime = settings.SustainTime;
-            impulseDefinition.TimeEnvelope.DecayTime = settings.DecayTime;
+            impulseDefinition.AmplitudeGain = config.ShakeAmplitude;
+            impulseDefinition.FrequencyGain = config.ShakeFrequency;
 
-            _cinemachineBrain.IgnoreTimeScale = settings.IgnoreTimeScale;
+            impulseDefinition.TimeEnvelope.AttackTime = config.AttackTime;
+            impulseDefinition.TimeEnvelope.SustainTime = config.SustainTime;
+            impulseDefinition.TimeEnvelope.DecayTime = config.DecayTime;
+
+            _cinemachineBrain.IgnoreTimeScale = config.IgnoreTimeScale;
         }
 
  

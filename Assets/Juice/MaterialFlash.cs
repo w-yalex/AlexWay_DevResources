@@ -10,20 +10,20 @@ namespace AW.UnityResources
     public class MaterialFlash : JuiceComponent
     {  
         [Header("Material Flash")]
-        [SerializeField] private Settings _settings;
+        [SerializeField] private Config _defaultConfig;
         private MeshRenderer _meshRenderer;
         
         private MaterialPropertyBlock _propertyBlock;
 
         [Serializable]
-        public struct Settings
+        public class Config
         {
             [Header("Visuals")]
-            public Color FlashColor;
+            public Color FlashColor = Color.white;
             
             [Header("Timing")]
-            public int FlashCount;
-            public float TotalFlashDuration;
+            public int FlashCycles = 4;
+            public float TotalFlashDuration = 0.2f;
             public bool IgnoreTimeScale;
         }
 
@@ -31,44 +31,43 @@ namespace AW.UnityResources
         private void Awake()
         {
             _meshRenderer = GetComponent<MeshRenderer>();
-
             _propertyBlock = new MaterialPropertyBlock();
         }
 
 
         public override void PlayOnObject(Action onComplete = null)
-            => BeginMaterialFlash(_settings, onComplete);
+            => BeginMaterialFlash(_defaultConfig, onComplete);
     
 
         public override void PlayOnObject<TData>(TData juiceData, Action onComplete = null)
         {
-            if (juiceData is not Settings customSettings)
+            if (juiceData is not Config customConfig)
             {
-                UnityDebug.LogWarning(this, $"Juice data received did not match {typeof(Settings).FullName}");
+                UnityDebug.LogWarning(this, $"Juice data received did not match {typeof(Config).FullName}");
                 return;
             }
 
-            BeginMaterialFlash(customSettings, onComplete);
+            BeginMaterialFlash(customConfig, onComplete);
         }
 
         public override void ClearOnObject() => ClearMaterialFlash();
 
-        private void BeginMaterialFlash(Settings settings, Action onComplete = null)
+        private void BeginMaterialFlash(Config config, Action onComplete = null)
         {
             DOTween.Kill(this);
 
-            float cycleTime = settings.TotalFlashDuration / settings.FlashCount;
+            float cycleTime = config.TotalFlashDuration / config.FlashCycles;
             float flashDelay = cycleTime * 0.5f;
 
             Sequence seq = DOTween.Sequence()
-                .AppendCallback(() => FlashMaterials(settings.FlashColor))
+                .AppendCallback(() => FlashMaterials(config.FlashColor))
                 .AppendInterval(flashDelay)
                 .AppendCallback(ResetMaterials)
                 .AppendInterval(flashDelay)
-                .SetLoops(settings.FlashCount)
-                .SetUpdate(settings.IgnoreTimeScale)
+                .SetLoops(config.FlashCycles)
+                .SetUpdate(config.IgnoreTimeScale)
                 .SetTarget(this)
-                .OnComplete(() => OnMaterialFlashComplete(settings, onComplete));
+                .OnComplete(() => OnMaterialFlashComplete(config, onComplete));
         }
 
         private void ClearMaterialFlash()
@@ -77,7 +76,7 @@ namespace AW.UnityResources
             ResetMaterials();
         }
 
-        private void OnMaterialFlashComplete(Settings settings, Action onComplete = null)
+        private void OnMaterialFlashComplete(Config config, Action onComplete = null)
         {
             ClearMaterialFlash();
             onComplete?.Invoke();

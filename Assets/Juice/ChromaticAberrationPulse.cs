@@ -10,67 +10,68 @@ namespace AW.UnityResources
     {
   
         [Header("Chromatic Aberration Pulse")]
-        [SerializeField] private Settings _settings;
+        [SerializeField] private Config _defaultConfig;
 
         private static ChromaticAberration _chromaticAbberation;
         private static readonly object _instanceFeedbackTarget = new();
 
         [Serializable]
-        public struct Settings
+        public class Config
         {
             [Header("Intensity")]
-            [Range(0f, 1f)] public float MaxIntensity;
+            [Range(0f, 1f)] public float MaxIntensity = 1f;
 
             [Header("Timing")]
-            public float MaxAttackTime;
-            public float SustainTime;
-            public float DecayTime;
+
+            public float MaxAttackTime = 0.1f;
+            public float SustainTime = 0.2f;
+            public float DecayTime = 0.5f;
             public bool IgnoreTimeScale;
         }
 
 
         public override void PlayOnObject(Action onComplete = null)
-            => PlayInstance(_settings, onComplete);
+            => PlayInstance(_defaultConfig, onComplete);
 
         public override void PlayOnObject<TData>(TData juiceData, Action onComplete = null)
         {     
-            if (juiceData is not Settings customSettings)
+            if (juiceData is not Config customConfig)
             {
-                UnityDebug.LogWarning(this, $"Juice data received did not match {typeof(Settings).FullName}");
+                UnityDebug.LogWarning(this, $"Juice data received did not match {typeof(Config).FullName}");
                 return;
             }
 
-            PlayInstance(customSettings, onComplete);
+            PlayInstance(customConfig, onComplete);
         }
 
         public override void ClearOnObject() => ClearInstance();
 
 
-        public static void PlayInstance(Settings settings, Action onComplete = null)
-            => BeginChromaticAberrationPulse(settings, onComplete);
+        public static void PlayInstance(Config config, Action onComplete = null)
+            => BeginChromaticAberrationPulse(config, onComplete);
 
 
         public static void ClearInstance() => ClearChromaticAberrationPulse();
 
-        private static void BeginChromaticAberrationPulse(Settings settings, Action onComplete = null)
+        private static void BeginChromaticAberrationPulse(Config config, Action onComplete = null)
         {
             DOTween.Kill(_instanceFeedbackTarget);
 
             ValidatePostProcessing();
             TrySpawnChromaticAberrationPulseSource();
 
-            float progressToTarget = Mathf.Clamp01(_chromaticAbberation.intensity.value / settings.MaxIntensity);
-            float attackTime = Mathf.Lerp(settings.MaxIntensity, 0f, progressToTarget);
+            float progressToTarget = Mathf.Clamp01(_chromaticAbberation.intensity.value / config.MaxIntensity);
+            float attackTime = Mathf.Lerp(config.MaxIntensity, 0f, progressToTarget);
 
             Sequence seq = DOTween.Sequence()
-                .Append(DOTween.To(() => _chromaticAbberation.intensity.value, x => _chromaticAbberation.intensity.value = x, settings.MaxIntensity, attackTime)
+                .Append(DOTween.To(() => _chromaticAbberation.intensity.value, x => _chromaticAbberation.intensity.value = x, config.MaxIntensity, attackTime)
                     .SetEase(Ease.InOutSine))
-                .AppendInterval(settings.SustainTime)
-                .Append(DOTween.To(() => _chromaticAbberation.intensity.value, x => _chromaticAbberation.intensity.value = x, 0f, settings.DecayTime)
+                .AppendInterval(config.SustainTime)
+                .Append(DOTween.To(() => _chromaticAbberation.intensity.value, x => _chromaticAbberation.intensity.value = x, 0f, config.DecayTime)
                     .SetEase(Ease.InOutSine))
-                .SetUpdate(settings.IgnoreTimeScale)
+                .SetUpdate(config.IgnoreTimeScale)
                 .SetTarget(_instanceFeedbackTarget)
-                .OnComplete(() => OnChromaticAberrationPulseComplete(settings, onComplete));
+                .OnComplete(() => OnChromaticAberrationPulseComplete(config, onComplete));
         }
 
         
@@ -81,7 +82,7 @@ namespace AW.UnityResources
         }
 
 
-        private static void OnChromaticAberrationPulseComplete(Settings settings, Action onComplete = null)
+        private static void OnChromaticAberrationPulseComplete(Config config, Action onComplete = null)
         {
             onComplete?.Invoke();
         }

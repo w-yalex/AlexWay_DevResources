@@ -7,11 +7,11 @@ namespace AW.UnityResources
     public class SquashAndStretch : JuiceComponent
     {
         [Header("Squash And Stretch")]
-        [SerializeField] private Settings _settings;
+        [SerializeField] private Config _defaultConfig;
         private Vector3 _objOriginalScale;
 
         [Serializable]
-        public struct Settings
+        public class Config
         {
             [Header("Direction")]
 
@@ -19,13 +19,13 @@ namespace AW.UnityResources
             public Vector3 OptionalPressureDirection;
 
             [Header("Shape")]
-            [Range(0f, 1f)] public float SquashAmount;
-            [Range(0f, 1f)] public float StretchAmount;
+            [Range(0f, 1f)] public float SquashAmount = 0.8f;
+            [Range(0f, 1f)] public float StretchAmount = 0.9f;
 
             [Header("Timing")]
-            public float SquashTime;
-            public float StretchTime;
-            public float OscillateDecayTime;
+            public float SquashTime = 0.4f;
+            public float StretchTime = 0.2f;
+            public float OscillateDecayTime = 1.5f;
             public bool IgnoreTimeScale;
         }
 
@@ -35,35 +35,35 @@ namespace AW.UnityResources
         }
 
         public override void PlayOnObject(Action onComplete = null)
-            => BeginSquashAndStretch(_settings, onComplete);
+            => BeginSquashAndStretch(_defaultConfig, onComplete);
 
         public override void PlayOnObject<TData>(TData juiceData, Action onComplete = null)
         {
-            if (juiceData is not Settings customSettings)
+            if (juiceData is not Config customConfig)
             {
-                UnityDebug.LogWarning(this, $"Juice data received did not match {typeof(Settings).FullName}");
+                UnityDebug.LogWarning(this, $"Juice data received did not match {typeof(Config).FullName}");
                 return;
             }
 
-            BeginSquashAndStretch(customSettings, onComplete);
+            BeginSquashAndStretch(customConfig, onComplete);
         }
 
         public override void ClearOnObject() => ClearSquashAndStretch();
 
-        private void BeginSquashAndStretch(Settings settings, Action onComplete = null)
+        private void BeginSquashAndStretch(Config config, Action onComplete = null)
         {
             DOTween.Kill(this);
 
-            Vector3 squashScale = _objOriginalScale * _settings.SquashAmount;
-            Vector3 stretchScale = _objOriginalScale * (1 + _settings.StretchAmount);
+            Vector3 squashScale = _objOriginalScale * _defaultConfig.SquashAmount;
+            Vector3 stretchScale = _objOriginalScale * (1 + _defaultConfig.StretchAmount);
 
-            if (settings.IsDirectional)
+            if (config.IsDirectional)
             {
-                Vector3 pressureDir = settings.OptionalPressureDirection.normalized;
+                Vector3 pressureDir = transform.InverseTransformDirection(config.OptionalPressureDirection).normalized;
                 Vector3 weightedAxisPressure = new Vector3(Mathf.Abs(pressureDir.x), Mathf.Abs(pressureDir.y), Mathf.Abs(pressureDir.z));
 
-                float squashFactor = Mathf.Max(0.001f, 1f - settings.SquashAmount);
-                float stretchFactor = 1f + Mathf.Clamp01(settings.StretchAmount);
+                float squashFactor = Mathf.Max(0.001f, 1f - config.SquashAmount);
+                float stretchFactor = 1f + Mathf.Clamp01(config.StretchAmount);
 
                 squashScale = GetDirectionalTargetScale(squashFactor, weightedAxisPressure);
                 stretchScale = GetDirectionalTargetScale(stretchFactor, weightedAxisPressure);   
@@ -71,15 +71,15 @@ namespace AW.UnityResources
 
     
             DOTween.Sequence()
-                .Append(transform.DOScale(squashScale, settings.SquashTime)
+                .Append(transform.DOScale(squashScale, config.SquashTime)
                     .SetEase(Ease.InOutSine))
-                .Append(transform.DOScale(stretchScale, settings.StretchTime)
+                .Append(transform.DOScale(stretchScale, config.StretchTime)
                     .SetEase(Ease.InQuad))
-                .Append(transform.DOScale(_objOriginalScale, settings.OscillateDecayTime)
+                .Append(transform.DOScale(_objOriginalScale, config.OscillateDecayTime)
                     .SetEase(Ease.OutElastic))
-                .SetUpdate(settings.IgnoreTimeScale)
+                .SetUpdate(config.IgnoreTimeScale)
                 .SetTarget(this)
-                .OnComplete(() => OnSquashAndStretchComplete(settings, onComplete));
+                .OnComplete(() => OnSquashAndStretchComplete(config, onComplete));
         }
 
 
@@ -89,7 +89,7 @@ namespace AW.UnityResources
             transform.localScale = _objOriginalScale;
         }
 
-        private void OnSquashAndStretchComplete(Settings settings, Action onComplete = null)
+        private void OnSquashAndStretchComplete(Config config, Action onComplete = null)
         {
             onComplete?.Invoke();
         }

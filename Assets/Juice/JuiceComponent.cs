@@ -13,20 +13,20 @@ namespace AW.UnityResources
         [Header("Juice Component")]
 
         [Tooltip("Can be used to reference a specific JuiceComponent")]
-        [SerializeField] private string _optionalReferenceKey = "None";
+        [SerializeField] private string _optionalReferenceKey;
         
         public string OptionalReferenceKey => _optionalReferenceKey;
 
         protected virtual void OnValidate()
         {
             if (string.IsNullOrEmpty(_optionalReferenceKey))
-                _optionalReferenceKey = "None";
+                _optionalReferenceKey = null;
         }
 
         
         public abstract void PlayOnObject(Action onComplete = null);
 
-        public abstract void PlayOnObject<TData>(TData juiceData, Action onComplete = null) where TData : struct;
+        public abstract void PlayOnObject<TData>(TData juiceData, Action onComplete = null) where TData : class;
 
         public abstract void ClearOnObject();
         
