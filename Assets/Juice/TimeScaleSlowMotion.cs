@@ -10,8 +10,6 @@ namespace AW.UnityResources
         [Header("Time Scale Slow Motion")]
         [SerializeField] private Config _config;
 
-        private static readonly object _instanceFeedbackTarget = new();
-
         [Serializable]
         public class Config
         {
@@ -74,7 +72,7 @@ namespace AW.UnityResources
                     .SetEase(config.AttackEase)
                     .OnComplete(() => t = 0f))
                 .AppendInterval(config.SustainTime)
-                .Append(DOTween.To(() => t, x => t = x, 0f, config.DecayTime)
+                .Append(DOTween.To(() => t, x => t = x, 1f, config.DecayTime)
                     .OnUpdate(() =>
                     {
                         float appliedTimeScale = Mathf.Lerp(targetTimeScale, 1f, t);

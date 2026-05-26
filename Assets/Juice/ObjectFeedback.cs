@@ -2,6 +2,7 @@ using UnityEngine;
 using System;
 using UnityEditor;
 using UnityEditorInternal;
+using System.Collections.Generic;
 
 namespace AW.UnityResources
 {
@@ -11,23 +12,25 @@ namespace AW.UnityResources
     /// </summary>
     public class ObjectFeedback : MonoBehaviour
     {
-        [Flags]
         public enum Feedback
         {
-            None = 0,
-            TimeScaleFreeze = 1 << 0,
-            TimeScaleSlowMotion = 1 << 1,
-            CinemachineCameraShake = 1 << 2,
-            ScreenFlashStrobe = 1 << 3,
-            ChromaticAberrationPulse = 1 << 4,
-            LensDistortionBounce = 1 << 5,
-            MaterialFlash = 1 << 6,
-            SquashAndStretch = 1 << 7,
-            PhysicsKnockback = 1 << 8,
-            SoundEffect = 1 << 9,
+            None,
+            TimeScaleFreeze,
+            TimeScaleSlowMotion,
+            TimeScaleAccelerate,
+            CinemachineCameraShake,
+            ScreenFlashStrobe,
+            ChromaticAberrationPulse,
+            LensDistortionBounce,
+            MaterialFlash,
+            SquashAndStretch,
+            PhysicsKnockback,
+            SoundEffect,
+            ParticleEffect,
         }
-
-        [SerializeField] private Feedback _feedbackOnObject;
+    
+        [Header("Feedback Components")]
+        [SerializeField] private List<Feedback>_feedbackOnObject = new(){ Feedback.None };
 
         private void OnValidate()
         {
@@ -63,7 +66,7 @@ namespace AW.UnityResources
             {
                 if (feedback == Feedback.None) continue;
 
-                bool shouldExist = (_feedbackOnObject & feedback) != 0;
+                // bool shouldExist = (_feedbackOnObject & feedback) != 0;
 
                 Type feedbackType = Type.GetType($"AW.UnityResources.{feedback}");
                 if (feedbackType == null || !feedbackType.IsSubclassOf(typeof(JuiceComponent)))
@@ -75,14 +78,14 @@ namespace AW.UnityResources
                 Component existingComponent = GetComponent(feedbackType);
                 bool doesExist = existingComponent != null;
 
-                if (shouldExist && !doesExist)
-                {
-                    gameObject.AddComponent(feedbackType);
-                }
-                else if (!shouldExist && doesExist)
-                {
-                    DestroyImmediate(existingComponent);
-                }
+                // if (shouldExist && !doesExist)
+                // {
+                //     gameObject.AddComponent(feedbackType);
+                // }
+                // else if (!shouldExist && doesExist)
+                // {
+                //     DestroyImmediate(existingComponent);
+                // }
 
             }
             

@@ -11,8 +11,8 @@ namespace AW.UnityResources
         [Range(0f, 1f)] public float MinVolume = 1f;
         [Range(0f, 1f)] public float MaxVolume = 1f;
 
-        [Range(-3f, 3f)] public float MinPitch = 1f;
-        [Range(-3f, 3f)] public float MaxPitch = 1f;
+        [Range(-3f, 3f)] public float MinPitch = 0.8f;
+        [Range(-3f, 3f)] public float MaxPitch = 1.2f;
 
         public bool IsLooping;
         public bool IsSpatial;

@@ -27,9 +27,9 @@ namespace AW.UnityResources
         {
             bool isOverriden = false;
 
-            if (_currentPriority == -1 && (int)modifier > (int)_activeModifier)
+            if (overridePriority > _currentPriority)
                 isOverriden = true;
-            else if (overridePriority > _currentPriority)
+            else if (overridePriority == _currentPriority && (int)modifier > (int)_activeModifier)
                 isOverriden = true;
 
             if (isOverriden)

@@ -27,15 +27,12 @@ namespace AW.UnityResources
         {
             get
             {
-                if (_collection == null)
-                    InitPool();
-
-
+                if (_collection == null) InitPool();
                 return _collection;
             }
         }
 
-
+        
         public void InitPool() // Call this in the Awake of implemntation script to prevent lag spike on first Get()
         {
             _collection?.Clear();

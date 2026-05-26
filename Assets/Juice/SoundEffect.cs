@@ -19,7 +19,6 @@ namespace AW.UnityResources
             if (!_defaultAudioSourceData.AudioClip)
             {
                 UnityDebug.LogWarning(this, $"No AudioClip configured in default audio source data for {gameObject.name} gameObject");
-
             }
         }
 
@@ -51,8 +50,10 @@ namespace AW.UnityResources
 
         private void PlaySoundEffect(AudioSourceData audioSourceData, Action onComplete = null)
         {
+            if (_activeAudioHandle != null)
+                _activeAudioHandle.PoolSource.OnComponentRelease -= _onAudioRelease;
+        
             _activeAudioHandle = AudioManager.Play(audioSourceData);           
-
             _onAudioRelease = (audioSource) =>
             {
                 if (audioSource != _activeAudioHandle.ActiveComponent) return;
@@ -61,9 +62,8 @@ namespace AW.UnityResources
                 _activeAudioHandle = null;
                 _onAudioRelease = null;
 
-                OnSoundEffectComplete(audioSourceData, onComplete);
+                onComplete?.Invoke();
             };
-
             
             _activeAudioHandle.PoolSource.OnComponentRelease += _onAudioRelease;
 
@@ -80,13 +80,6 @@ namespace AW.UnityResources
             _activeAudioHandle = null;
             _onAudioRelease = null;
         }
-
-
-        private void OnSoundEffectComplete(AudioSourceData audioSourceData, Action onComplete = null)
-        {
-            onComplete?.Invoke();
-        }
-
 
 
     }

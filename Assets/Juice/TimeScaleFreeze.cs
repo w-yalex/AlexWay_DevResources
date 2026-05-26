@@ -8,7 +8,6 @@ namespace AW.UnityResources
     {
         [Header("Time Scale Freeze")]
         [SerializeField] private Config _defaultConfig;
-        private static float _instanceFeedbackTarget;
 
         [Serializable]
         public class Config
@@ -44,11 +43,14 @@ namespace AW.UnityResources
         private static void BeginTimeScaleFreeze(Config config, Action onComplete = null)
         {
             if (!TimeScale.TrySetActiveModifier(TimeScale.Modifier.Freeze, config.OverridePriority)) return;
-
             DOTween.Kill(TimeScale.ModifierTarget);
+
+            TimeScale.Override(0f);
             DOVirtual.DelayedCall(config.FreezeDuration, () =>
                 {
+                    TimeScale.Override(1f);
                     TimeScale.TryClearActiveModifier(TimeScale.Modifier.Freeze);
+                    
                     onComplete?.Invoke();
                 })
                 .SetUpdate(true)

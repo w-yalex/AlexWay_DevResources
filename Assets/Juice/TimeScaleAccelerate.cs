@@ -17,7 +17,7 @@ namespace AW.UnityResources
             [Header("Timing")]
 
             [Tooltip("The higher value, the greater the slow motion")]
-            [Range(1f, MaxAccelerateFactor)] public float targetTimeScale = 0.8f;
+            [Range(1f, MaxAccelerateFactor)] public float targetTimeScale = 2f;
             public float MaxAttackTime = 0.2f;
             public float SustainTime = 0.2f;
             public float DecayTime = 0.5f;

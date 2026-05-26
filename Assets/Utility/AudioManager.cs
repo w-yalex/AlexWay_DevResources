@@ -10,13 +10,14 @@ namespace AW.UnityResources
         private const int DefaultCapacity = 40;
         private const int MaxSize = 60;
         
-        public static PoolSource<AudioSource> AudioEmitterPoolSource { get; private set; } 
+        public static PoolSource<AudioSource> AudioEmitterPoolSource { get; private set; } = new PoolSource<AudioSource>();
         private static readonly object _audioPlayTarget = new();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void InitAudioEmitterPool()
         {
             GameObject newAudioSourceEmitterObj = new GameObject("AudioSource_Emitter");
+
             AudioSource audioSource = newAudioSourceEmitterObj.AddComponent<AudioSource>();
             audioSource.playOnAwake = false;
 
@@ -36,7 +37,6 @@ namespace AW.UnityResources
                 releaseTimer = audioSourceData.CustomPlayDuration;
             else if (!audioSourceData.IsLooping)
                 releaseTimer = audioSourceData.AudioClip.length / Mathf.Abs(audioSource.pitch);
-
 
             if (releaseTimer != -1)
             {
