@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(ls \"$env:USERPROFILE\\\\.unity\\\\relay\\\\\" 2>$null; if \\(-not $?\\) { \"relay folder not found\" })"
+    ]
+  }
+}

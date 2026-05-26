@@ -1,16 +1,12 @@
 using UnityEngine;
 
-public class PlayerInputHandler : MonoBehaviour
+
+namespace AW.UnityResources
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+
+    public class PlayerInputHandler : MonoBehaviour
     {
         
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 }

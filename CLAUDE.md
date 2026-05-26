@@ -1,0 +1,5 @@
+- Never edit, create, or delete project files without explicit approval.
+- Always return the full modified code in chat first, with a bullet list outside the code block summarizing what changed. Never use inline comments to mark changes.
+- Reading/searching files is always permitted.
+- Only write directly to the project when told something like "make the changes" or "edit the files directly".
+- Do not change Unity settings, inspector values, or project config without approval.
